@@ -1,0 +1,54 @@
+# ─────────────────────────────────────────────────────────────────
+# render.yaml — Render Blueprint for WebPen Backend
+#
+# Usage:
+#   1. Push this repo to GitHub / GitLab.
+#   2. In Render Dashboard → New → Blueprint → point to your repo.
+#   3. Fill in the secret env vars under Environment → Secret Files.
+#
+# Docs: https://render.com/docs/blueprint-spec
+# ─────────────────────────────────────────────────────────────────
+
+services:
+  - type: web
+    name: webpen-backend
+    runtime: docker          # use our Dockerfile
+    region: oregon           # free-tier region (closest to most users)
+    plan: free               # free-tier (512 MB RAM, shared CPU, spins down after 15 min idle)
+
+    # Health check — Render marks the deploy healthy only when this returns 200
+    healthCheckPath: /health
+
+    # Auto-deploy on every push to the main branch
+    autoDeploy: true
+    branch: main
+
+    # ── Environment variables ──────────────────────────────────────
+    # Mark sensitive values as "sync: false" — you will set them
+    # manually in the Render Dashboard → Environment → Add Secret.
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      - key: PORT
+        value: "3000"
+
+      # PayPal — set these in the Render Dashboard (sync: false = secret)
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+
+      - key: PAYPAL_WEBHOOK_ID
+        sync: false
+
+      - key: PAYPAL_MODE
+        value: live           # change to "sandbox" for testing
+
+      # Supabase — set these in the Render Dashboard
+      - key: SUPABASE_URL
+        sync: false
+
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
