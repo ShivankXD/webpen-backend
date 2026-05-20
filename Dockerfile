@@ -8,7 +8,7 @@
 # ─────────────────────────────────────────────────────────────────
 
 # ── Stage 1: install dependencies ─────────────────────────────────
-FROM node:18-alpine AS deps
+FROM node:22-alpine AS deps
 
 # Install build tools needed for native addons (e.g. bcrypt)
 RUN apk add --no-cache libc6-compat
@@ -23,7 +23,7 @@ RUN npm ci --omit=dev
 
 
 # ── Stage 2: production runner ────────────────────────────────────
-FROM node:18-alpine AS runner
+FROM node:22-alpine AS runner
 
 # Security: drop all Linux capabilities by default
 RUN apk add --no-cache dumb-init
