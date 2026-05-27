@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upgrade to WebPen Premium</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0c;
+      --surface: #111115;
+      --border: rgba(255, 255, 255, 0.08);
+      --text: #e8e8f0;
+      --muted: rgba(255, 255, 255, 0.4);
+      --accent: #f5c842;
+      --accent-rgb: 245, 200, 66;
+      --accent2: #ff6b35;
+      --green: #4ade80;
+      --radius: 16px;
+      --font-ui: 'Syne', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-ui);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Elegant ambient backgrounds */
+    .ambient-orb {
+      position: absolute;
+      width: 450px;
+      height: 450px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(var(--accent-rgb), 0.1) 0%, transparent 70%);
+      top: -150px;
+      right: -100px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .ambient-orb-2 {
+      position: absolute;
+      width: 350px;
+      height: 350px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 107, 53, 0.06) 0%, transparent 70%);
+      bottom: -100px;
+      left: -100px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 420px;
+      padding: 20px;
+    }
+
+    .card {
+      background: rgba(17, 17, 21, 0.8);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 36px 30px;
+      box-shadow: 
+        0 0 0 1px rgba(255, 255, 255, 0.02),
+        0 24px 64px rgba(0, 0, 0, 0.8);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+
+    .logo svg {
+      color: var(--accent);
+    }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+
+    .title {
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+    }
+
+    .title span {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .pricing-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+
+    .price-row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .price-amount {
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .price-meta {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .price-period {
+      font-size: 13px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+    }
+
+    .features-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .features-list li {
+      font-size: 12.5px;
+      color: rgba(255, 255, 255, 0.7);
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .check {
+      color: var(--green);
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    #paypal-button-container {
+      min-height: 150px;
+      margin-top: 15px;
+    }
+
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 150px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      gap: 12px;
+    }
+
+    .spinner {
+      width: 24px;
+      height: 24px;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .legal-text {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: rgba(255, 255, 255, 0.2);
+      text-align: center;
+      margin-top: 20px;
+      line-height: 1.4;
+    }
+
+    /* Success overlay styling */
+    .success-overlay {
+      position: absolute;
+      inset: 0;
+      background: var(--surface);
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+
+    .success-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .checkmark-circle {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: rgba(74, 222, 128, 0.1);
+      border: 2px solid var(--green);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;
+      box-shadow: 0 0 20px rgba(74, 222, 128, 0.2);
+    }
+
+    .success-title {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--green);
+      margin-bottom: 8px;
+    }
+
+    .success-subtitle {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-orb"></div>
+  <div class="ambient-orb-2"></div>
+
+  <div class="container">
+    <div class="card">
+      
+      <!-- Success Screen -->
+      <div id="success-screen" class="success-overlay">
+        <div class="checkmark-circle">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        <h3 class="success-title">Premium Activated!</h3>
+        <p class="success-subtitle">Thank you for subscribing to WebPen Premium. Your workspace has been updated.</p>
+        <p class="success-subtitle" style="font-family: var(--font-mono); font-size: 10px;">You may safely close this window now.</p>
+      </div>
+
+      <!-- Main billing info -->
+      <div class="header">
+        <div class="logo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+          </svg>
+          <span>WebPen</span>
+        </div>
+        <div class="eyebrow">Checkout Portal</div>
+        <h2 class="title">Unlock <span>Premium</span></h2>
+      </div>
+
+      <div class="pricing-card">
+        <div class="price-row">
+          <span class="price-amount">$4</span>
+          <div class="price-meta">
+            <span class="price-period">/ month</span>
+            <span class="price-period" style="font-size: 10px; opacity: 0.5;">≈ ₹333 / mo</span>
+          </div>
+        </div>
+        <ul class="features-list">
+          <li><span class="check">✓</span> Save screenshots directly to Google Drive</li>
+          <li><span class="check">✓</span> Unlimited annotation history</li>
+          <li><span class="check">✓</span> Priority customer support</li>
+          <li><span class="check">✓</span> Free access to all future premium features</li>
+        </ul>
+      </div>
+
+      <!-- PayPal checkout container -->
+      <div id="paypal-button-mount">
+        <div id="paypal-button-container">
+          <div class="loading-container">
+            <div class="spinner"></div>
+            <span>Setting up secure connection…</span>
+          </div>
+        </div>
+      </div>
+
+      <p class="legal-text">
+        Subscriptions processed securely via PayPal.<br>Cancel anytime with a single click.
+      </p>
+
+    </div>
+  </div>
+
+  <script>
+    // Extract userId from URL query parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const userId = urlParams.get('userId');
+
+    if (!userId) {
+      document.getElementById('paypal-button-container').innerHTML = `
+        <div style="color: #f87171; text-align: center; font-family: var(--font-mono); font-size: 11px; padding: 20px;">
+          ⚠ Missing user authentication context. Please open checkout directly from the extension popup.
+        </div>
+      `;
+    } else {
+      // Set up script load dynamic insertion to handle runtime variables if needed,
+      // but plain script load is clean and simple.
+      const PAYPAL_PLAN_ID = "P-4U736067JU390512SNIGZQ6A";
+      const script = document.createElement('script');
+      script.src = "https://www.paypal.com/sdk/js?client-id=AZIHDni8HXTVIHwjgZh9Y4sClTjW4xsiHPKJWeH87wZr3Qzrbd0er4JDz6kaJsbZT-d1HNTv5PUEQc-m&vault=true&intent=subscription&currency=USD";
+      script.onload = () => {
+        document.getElementById('paypal-button-container').innerHTML = ''; // clear spinner
+        
+        paypal.Buttons({
+          style: {
+            shape: 'pill',
+            color: 'gold',
+            layout: 'vertical',
+            label: 'subscribe'
+          },
+          createSubscription: (data, actions) => {
+            return actions.subscription.create({
+              plan_id: PAYPAL_PLAN_ID,
+              custom_id: userId // Pass the extension userId in custom_id to connect the webhook!
+            });
+          },
+          onApprove: async (data) => {
+            document.getElementById('paypal-button-mount').innerHTML = `
+              <div class="loading-container">
+                <div class="spinner"></div>
+                <span>Activating your license, please wait…</span>
+              </div>
+            `;
+            
+            try {
+              const response = await fetch('/paypal/verify-subscription', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  subscriptionId: data.subscriptionID,
+                  userId: userId
+                })
+              });
+              
+              const result = await response.json();
+              if (result.isPremium) {
+                // Trigger success screen overlay
+                document.getElementById('success-screen').classList.add('active');
+              } else {
+                alert("Subscription started, but activation failed: " + (result.error || "Please contact support."));
+              }
+            } catch (err) {
+              console.error("Verification failed:", err);
+              alert("Payment succeeded, but we failed to connect to WebPen activation server. Your license will sync shortly, or contact support.");
+            }
+          },
+          onError: (err) => {
+            console.error("PayPal Error:", err);
+            alert("PayPal checkout encountered an issue. Please try again.");
+          }
+        }).render('#paypal-button-container');
+      };
+      
+      script.onerror = () => {
+        document.getElementById('paypal-button-container').innerHTML = `
+          <div style="color: #f87171; text-align: center; font-family: var(--font-mono); font-size: 11px; padding: 20px;">
+            ⚠ Failed to establish a secure connection with PayPal. Please check your internet connection or try again.
+          </div>
+        `;
+      };
+      
+      document.body.appendChild(script);
+    }
+  </script>
+</body>
+</html>

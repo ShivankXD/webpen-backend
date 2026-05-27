@@ -273,6 +273,38 @@ app.post("/paypal/verify-subscription", async (req, res) => {
   }
 });
 
+// ── Serve static files from public directory ───────────────────────
+const path = require("path");
+app.use(express.static(path.join(__dirname, "public")));
+
+// ══════════════════════════════════════════════════════════════════
+//  ROUTE 3 — GET /api/user-status
+//  Checks the database to verify if a user has premium enabled.
+// ══════════════════════════════════════════════════════════════════
+app.get("/api/user-status", async (req, res) => {
+  const { userId } = req.query;
+  if (!userId) {
+    return res.status(400).json({ error: "Missing userId" });
+  }
+  try {
+    const { data, error } = await supabase
+      .from("users")
+      .select("is_premium, email")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    return res.json({
+      isPremium: data ? !!data.is_premium : false,
+      email: data ? data.email : null,
+    });
+  } catch (err) {
+    console.error("[WebPen] /api/user-status error:", err.message);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // ══════════════════════════════════════════════════════════════════
 //  HEALTH CHECK — GET /health
 //  Render uses this to confirm the service is alive.

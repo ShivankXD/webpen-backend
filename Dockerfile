@@ -37,6 +37,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY server.js    ./
 COPY package.json ./
+COPY public       ./public
 
 # Drop to non-root user
 USER webpen
