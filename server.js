@@ -219,6 +219,20 @@ app.post("/webhook/paypal", async (req, res) => {
         break;
       }
 
+      // One-time LIFETIME order captured — grant premium (safety net in case
+      // the client-side /paypal/verify-order call never reached us).
+      case "PAYMENT.CAPTURE.COMPLETED": {
+        const captureId = resource.id;
+        const userId    = resource.custom_id ?? null;
+        if (!userId) {
+          console.warn("[WebPen Webhook] ⚠ CAPTURE.COMPLETED missing custom_id — cannot link user");
+          break;
+        }
+        await setUserPremium(userId, captureId, null);
+        console.log(`[WebPen Webhook] ✓ Activated LIFETIME premium — user=${userId} capture=${captureId}`);
+        break;
+      }
+
       default:
         console.log(`[WebPen Webhook] Unhandled event type: ${eventType}`);
     }
@@ -269,6 +283,50 @@ app.post("/paypal/verify-subscription", async (req, res) => {
 
   } catch (err) {
     console.error("[WebPen] verify-subscription error:", err.message);
+    return res.status(500).json({ isPremium: false, error: "Internal server error" });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════
+//  ROUTE 2b — POST /paypal/verify-order
+//
+//  Called by checkout.html after a one-time LIFETIME payment is approved
+//  and captured client-side. We re-verify the order with PayPal before
+//  granting premium, exactly as we do for subscriptions.
+//
+//  Body: { orderId: string, userId: string }
+// ══════════════════════════════════════════════════════════════════
+app.post("/paypal/verify-order", async (req, res) => {
+  const { orderId, userId } = req.body;
+
+  if (!orderId || !userId) {
+    return res.status(400).json({ error: "Missing orderId or userId" });
+  }
+
+  try {
+    const token = await getPayPalToken();
+    const { data: order } = await axios.get(
+      `${PAYPAL_BASE}/v2/checkout/orders/${orderId}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    // A fully paid one-time order is COMPLETED; APPROVED means captured-pending.
+    if (order.status !== "COMPLETED" && order.status !== "APPROVED") {
+      return res.status(402).json({
+        isPremium: false,
+        error: `Order status is "${order.status}", not COMPLETED`,
+      });
+    }
+
+    const email = order.payer?.email_address ?? null;
+
+    // Lifetime grant — store the order id in paypal_sub_id (there is no sub).
+    await setUserPremium(userId, orderId, email);
+    console.log(`[WebPen] ✓ Verified & activated LIFETIME premium — user=${userId} order=${orderId}`);
+
+    return res.json({ isPremium: true, email });
+  } catch (err) {
+    console.error("[WebPen] verify-order error:", err.message);
     return res.status(500).json({ isPremium: false, error: "Internal server error" });
   }
 });

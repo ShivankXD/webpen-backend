@@ -312,17 +312,17 @@
 
       <div class="pricing-card">
         <div class="price-row">
-          <span class="price-amount">$4</span>
+          <span class="price-amount" id="price-amount">$1</span>
           <div class="price-meta">
-            <span class="price-period">/ month</span>
-            <span class="price-period" style="font-size: 10px; opacity: 0.5;">≈ ₹333 / mo</span>
+            <span class="price-period" id="price-period">/ month</span>
+            <span class="price-period" id="price-sub" style="font-size: 10px; opacity: 0.5;">≈ ₹85 / mo</span>
           </div>
         </div>
         <ul class="features-list">
-          <li><span class="check">✓</span> Save screenshots directly to Google Drive</li>
-          <li><span class="check">✓</span> Unlimited annotation history</li>
+          <li><span class="check">✓</span> Unlock all 15 pen colours</li>
+          <li><span class="check">✓</span> 12 extra premium colours</li>
           <li><span class="check">✓</span> Priority customer support</li>
-          <li><span class="check">✓</span> Free access to all future premium features</li>
+          <li class="feat-future"><span class="check">✓</span> Free access to all future premium features</li>
         </ul>
       </div>
 
@@ -344,85 +344,148 @@
   </div>
 
   <script>
-    // Extract userId from URL query parameters
+    // Extract params from URL
     const urlParams = new URLSearchParams(window.location.search);
     const userId = urlParams.get('userId');
+    const plan   = (urlParams.get('plan') || 'monthly').toLowerCase() === 'lifetime'
+      ? 'lifetime' : 'monthly';
+
+    // ── Plan definitions ──────────────────────────────────────────────────────
+    // ⚠ IMPORTANT: the amount charged is defined by PayPal, NOT by the text on
+    // this page. The monthly plan is billed by its PayPal Plan ID; the lifetime
+    // plan is a one-time order for LIFETIME_PRICE. If you change a displayed
+    // price, update the matching PayPal plan / amount below to stay in sync.
+    const PAYPAL_PLAN_ID  = "P-4U736067JU390512SNIGZQ6A"; // must be a $1.00 / month plan
+    const LIFETIME_PRICE  = "6.00";                        // one-time charge, USD
+
+    // PayPal SDK client-id. Must match PAYPAL_MODE on the backend: a LIVE
+    // client-id requires PAYPAL_MODE=live so verification hits the right env.
+    const PAYPAL_CLIENT_ID =
+      "AZIHDni8HXTVIHwjgZh9Y4sClTjW4xsiHPKJWeH87wZr3Qzrbd0er4JDz6kaJsbZT-d1HNTv5PUEQc-m";
+
+    const errorBox = (message) => {
+      document.getElementById('paypal-button-container').innerHTML = `
+        <div style="color: #f87171; text-align: center; font-family: var(--font-mono); font-size: 11px; padding: 20px; line-height: 1.5;">
+          ${message}
+        </div>`;
+    };
 
     if (!userId) {
-      document.getElementById('paypal-button-container').innerHTML = `
-        <div style="color: #f87171; text-align: center; font-family: var(--font-mono); font-size: 11px; padding: 20px;">
-          ⚠ Missing user authentication context. Please open checkout directly from the extension popup.
-        </div>
-      `;
+      errorBox("⚠ Missing user context. Please open checkout from the extension popup.");
     } else {
-      // Set up script load dynamic insertion to handle runtime variables if needed,
-      // but plain script load is clean and simple.
-      const PAYPAL_PLAN_ID = "P-4U736067JU390512SNIGZQ6A";
-      const script = document.createElement('script');
-      script.src = "https://www.paypal.com/sdk/js?client-id=AZIHDni8HXTVIHwjgZh9Y4sClTjW4xsiHPKJWeH87wZr3Qzrbd0er4JDz6kaJsbZT-d1HNTv5PUEQc-m&vault=true&intent=subscription&currency=USD";
-      script.onload = () => {
+      // ── Reflect the chosen plan in the pricing card ──────────────────────────
+      if (plan === 'lifetime') {
+        document.getElementById('price-amount').textContent = '$6';
+        document.getElementById('price-period').textContent = 'one-time';
+        document.getElementById('price-sub').textContent    = 'Lifetime · ≈ ₹500 once';
+        const future = document.querySelector('.feat-future');
+        if (future) future.innerHTML = '<span class="check">✓</span> Lifetime access — all future updates included';
+        document.querySelector('.legal-text').innerHTML =
+          'One-time payment processed securely via PayPal.<br>Lifetime access — no recurring charges.';
+      }
+
+      const showActivating = () => {
+        document.getElementById('paypal-button-mount').innerHTML = `
+          <div class="loading-container">
+            <div class="spinner"></div>
+            <span>Activating your license, please wait…</span>
+          </div>`;
+      };
+
+      const onActivated = (result, kind) => {
+        if (result && result.isPremium) {
+          document.getElementById('success-screen').classList.add('active');
+        } else {
+          alert(kind + " started, but activation failed: " + ((result && result.error) || "Please contact support."));
+        }
+      };
+
+      const renderButtons = () => {
+        // Guard: SDK loaded but the global is missing (blocked / partial load)
+        if (typeof paypal === 'undefined' || !paypal.Buttons) {
+          errorBox("⚠ Couldn't initialise PayPal. Disable ad/script blockers for this window and try again.");
+          return;
+        }
         document.getElementById('paypal-button-container').innerHTML = ''; // clear spinner
-        
-        paypal.Buttons({
-          style: {
-            shape: 'pill',
-            color: 'gold',
-            layout: 'vertical',
-            label: 'subscribe'
-          },
-          createSubscription: (data, actions) => {
-            return actions.subscription.create({
-              plan_id: PAYPAL_PLAN_ID,
-              custom_id: userId // Pass the extension userId in custom_id to connect the webhook!
-            });
-          },
-          onApprove: async (data) => {
-            document.getElementById('paypal-button-mount').innerHTML = `
-              <div class="loading-container">
-                <div class="spinner"></div>
-                <span>Activating your license, please wait…</span>
-              </div>
-            `;
-            
+
+        const config = {
+          style: { shape: 'pill', color: 'gold', layout: 'vertical',
+                   label: plan === 'lifetime' ? 'pay' : 'subscribe' },
+          onError: (err) => {
+            console.error("PayPal Error:", err);
+            errorBox("⚠ PayPal checkout hit a problem. Please close this window and try again.");
+          }
+        };
+
+        if (plan === 'lifetime') {
+          // One-time payment — capture an order for the lifetime price
+          config.createOrder = (data, actions) => actions.order.create({
+            purchase_units: [{
+              amount: { value: LIFETIME_PRICE, currency_code: 'USD' },
+              description: 'WebPen Premium — Lifetime',
+              custom_id: userId
+            }]
+          });
+          config.onApprove = async (data, actions) => {
+            try {
+              await actions.order.capture();
+            } catch (err) {
+              console.error("Capture failed:", err);
+            }
+            showActivating();
+            try {
+              const response = await fetch('/paypal/verify-order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderId: data.orderID, userId })
+              });
+              onActivated(await response.json(), "Payment");
+            } catch (err) {
+              console.error("Verification failed:", err);
+              alert("Payment succeeded, but we couldn't reach the WebPen activation server. Your license will sync shortly, or contact support.");
+            }
+          };
+        } else {
+          // Recurring subscription
+          config.createSubscription = (data, actions) => actions.subscription.create({
+            plan_id: PAYPAL_PLAN_ID,
+            custom_id: userId // links the PayPal webhook back to this install
+          });
+          config.onApprove = async (data) => {
+            showActivating();
             try {
               const response = await fetch('/paypal/verify-subscription', {
                 method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                  subscriptionId: data.subscriptionID,
-                  userId: userId
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ subscriptionId: data.subscriptionID, userId })
               });
-              
-              const result = await response.json();
-              if (result.isPremium) {
-                // Trigger success screen overlay
-                document.getElementById('success-screen').classList.add('active');
-              } else {
-                alert("Subscription started, but activation failed: " + (result.error || "Please contact support."));
-              }
+              onActivated(await response.json(), "Subscription");
             } catch (err) {
               console.error("Verification failed:", err);
-              alert("Payment succeeded, but we failed to connect to WebPen activation server. Your license will sync shortly, or contact support.");
+              alert("Payment succeeded, but we couldn't reach the WebPen activation server. Your license will sync shortly, or contact support.");
             }
-          },
-          onError: (err) => {
-            console.error("PayPal Error:", err);
-            alert("PayPal checkout encountered an issue. Please try again.");
-          }
-        }).render('#paypal-button-container');
+          };
+        }
+
+        paypal.Buttons(config).render('#paypal-button-container').catch((err) => {
+          console.error("PayPal render error:", err);
+          errorBox("⚠ Couldn't display the PayPal button. Please refresh and try again.");
+        });
       };
-      
-      script.onerror = () => {
-        document.getElementById('paypal-button-container').innerHTML = `
-          <div style="color: #f87171; text-align: center; font-family: var(--font-mono); font-size: 11px; padding: 20px;">
-            ⚠ Failed to establish a secure connection with PayPal. Please check your internet connection or try again.
-          </div>
-        `;
-      };
-      
+
+      // Lifetime uses intent=capture (one-time); monthly uses vault+subscription
+      const intentParams = plan === 'lifetime'
+        ? "&intent=capture"
+        : "&vault=true&intent=subscription";
+
+      const script = document.createElement('script');
+      script.src =
+        "https://www.paypal.com/sdk/js?client-id=" + PAYPAL_CLIENT_ID +
+        intentParams + "&currency=USD";
+      script.onload = renderButtons;
+      script.onerror = () => errorBox(
+        "⚠ Failed to establish a secure connection with PayPal.<br>Check your internet connection and try again."
+      );
       document.body.appendChild(script);
     }
   </script>
